@@ -1,17 +1,22 @@
-import sqlglot
-from sqlglot import parse_one
-from sqlglot.optimizer.qualify_columns import quote_identifiers
-from mcp.server.fastmcp import FastMCP
-from utils.prompts import get_instructions
-from sqlglot.dialects import DIALECTS
+# Native libraries
 from typing import Annotated
-from pydantic import Field
 
+# Third-party libraries
+from pydantic import Field
+from sqlglot import parse_one, transpile, errors as sqlglot_errors
+from mcp.server.fastmcp import FastMCP
+from sqlglot.dialects import DIALECTS
+
+# Local application imports
+from utils.prompts import get_instructions
+
+# Initialize the FastMCP server with instructions
 mcp = FastMCP(
     name="SQL-Transpiler",
     instructions=get_instructions(),
 )
 
+# tool to list all available SQL dialects supported by sqlglot
 @mcp.tool(
     name="Dialects",
     description="List all available SQL dialects supported by sqlglot.",
@@ -39,7 +44,7 @@ def avaible_dialects() -> dict:
             }
         }
     
-
+# tool to transpile SQL queries from one dialect to another using sqlglot
 @mcp.tool(
     name="Transpiler",
     description="""Transpile SQL queries from one dialect to another using sqlglot. 
@@ -82,10 +87,10 @@ def transpile_sql(
     
     try:
         # Parse the SQL query
-        parsed = sqlglot.parse_one(sql_query, read=from_dialect.lower())
+        parsed = parse_one(sql_query, read=from_dialect.lower())
 
         # Transpile the SQL query to the target dialect
-        transpile_query = sqlglot.transpile(sql=sql_query, read=from_dialect.lower(), write=to_dialect.lower())[0]
+        transpile_query = transpile(sql=sql_query, read=from_dialect.lower(), write=to_dialect.lower())[0]
         
         # Return the transpiled query along with the dialects used
         return {
@@ -95,7 +100,7 @@ def transpile_sql(
                 "to_dialect": to_dialect
             }
         }
-    except sqlglot.errors.ParseError as e:
+    except sqlglot_errors.ParseError as e:
         # Handle errors during transpilation
         return {
             "error": {
